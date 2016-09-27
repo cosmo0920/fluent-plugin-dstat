@@ -1,10 +1,10 @@
-require 'fluent/input'
+require 'fluent/plugin/input'
 require 'fluent/mixin/rewrite_tag_name'
 
-module Fluent
+module Fluent::Plugin
   class DstatInput < Input
 
-    Plugin.register_input('dstat', self)
+    Fluent::Plugin.register_input('dstat', self)
 
     def initialize
       super
@@ -148,8 +148,8 @@ module Fluent
             'dstat' => data
           }
           emit_tag = @tag.dup
-          filter_record(emit_tag, Engine.now, record)
-          router.emit(emit_tag, Engine.now, record)
+          filter_record(emit_tag, Fluent::Engine.now, record)
+          router.emit(emit_tag, Fluent::Engine.now, record)
         end
 
         if (@line_number % @max_lines) == (@max_lines - 1)
