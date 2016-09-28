@@ -20,14 +20,6 @@ module Fluent::Plugin
       @last_time = Time.now
     end
 
-    # For fluentd v0.12.16 or earlier
-    class << self
-      unless method_defined?(:desc)
-        def desc(description)
-        end
-      end
-    end
-
     desc "supported ${hostname} placeholder powered by Fluent::Mixin::RewriteTagName"
     config_param :tag, :string
     desc "dstat command path"
