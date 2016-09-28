@@ -6,6 +6,8 @@ module Fluent::Plugin
 
     Fluent::Plugin.register_input('dstat', self)
 
+    helpers :thread
+
     def initialize
       super
 
@@ -62,7 +64,7 @@ module Fluent::Plugin
       @dw.attach(@loop)
       @tw = TimerWatcher.new(1, true,  &method(:check_dstat))
       @tw.attach(@loop)
-      @thread = Thread.new(&method(:run))
+      thread_create(:in_dstat_run, &method(:run))
     end
 
     def shutdown
@@ -70,7 +72,6 @@ module Fluent::Plugin
       @dw.detach
       @tw.detach
       @loop.stop
-      @thread.join
       File.delete(@tmp_file)
     end
 
