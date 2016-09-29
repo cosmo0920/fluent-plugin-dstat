@@ -6,7 +6,7 @@ module Fluent::Plugin
 
     Fluent::Plugin.register_input('dstat', self)
 
-    helpers :thread
+    helpers :thread, :inject, :compat_parameters
 
     def initialize
       super
@@ -36,6 +36,7 @@ module Fluent::Plugin
     include Fluent::Mixin::RewriteTagName
 
     def configure(conf)
+      compat_parameters_convert(conf, :inject)
       super
 
       @command = "#{@dstat_path} #{@option} --output #{@tmp_file} #{@delay}"
@@ -142,6 +143,7 @@ module Fluent::Plugin
           }
           emit_tag = @tag.dup
           filter_record(emit_tag, Fluent::Engine.now, record)
+          record = inject_values_to_record(emit_tag, Fluent::Engine.now, record)
           router.emit(emit_tag, Fluent::Engine.now, record)
         end
 
