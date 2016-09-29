@@ -1,5 +1,4 @@
 require 'fluent/plugin/input'
-require 'fluent/mixin/rewrite_tag_name'
 
 module Fluent::Plugin
   class DstatInput < Input
@@ -20,7 +19,7 @@ module Fluent::Plugin
       @last_time = Time.now
     end
 
-    desc "supported ${hostname} placeholder powered by Fluent::Mixin::RewriteTagName"
+    desc "tag name"
     config_param :tag, :string
     desc "dstat command path"
     config_param :dstat_path, :string, :default => "dstat"
@@ -32,8 +31,6 @@ module Fluent::Plugin
     config_param :tmp_file, :string, :default => "/tmp/dstat.csv"
     desc "hostname command path"
     config_param :hostname_command, :string, :default => "hostname"
-
-    include Fluent::Mixin::RewriteTagName
 
     def configure(conf)
       compat_parameters_convert(conf, :inject)
@@ -142,7 +139,6 @@ module Fluent::Plugin
             'dstat' => data
           }
           emit_tag = @tag.dup
-          filter_record(emit_tag, Fluent::Engine.now, record)
           record = inject_values_to_record(emit_tag, Fluent::Engine.now, record)
           router.emit(emit_tag, Fluent::Engine.now, record)
         end
