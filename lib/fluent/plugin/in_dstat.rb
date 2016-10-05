@@ -5,7 +5,7 @@ module Fluent::Plugin
 
     Fluent::Plugin.register_input('dstat', self)
 
-    helpers :thread, :inject, :compat_parameters
+    helpers :thread, :inject, :compat_parameters, :timer, :event_loop
 
     def initialize
       super
@@ -49,29 +49,16 @@ module Fluent::Plugin
       @io = IO.popen(@command, "r")
       @pid = @io.pid
 
-      @loop = Coolio::Loop.new
       @dw = DstatCSVWatcher.new(@tmp_file, &method(:receive_lines))
-      @dw.attach(@loop)
-      @tw = TimerWatcher.new(1, true,  &method(:check_dstat))
-      @tw.attach(@loop)
-      thread_create(:in_dstat_run, &method(:run))
+      event_loop_attach(@dw)
+      @tw = timer_execute(:in_dstat_timer, 1, &method(:check_dstat))
     end
 
     def shutdown
       Process.kill(:TERM, @pid)
       @dw.detach
       @tw.detach
-      @loop.stop
       File.delete(@tmp_file)
-    end
-
-    def run
-      begin
-        @loop.run
-      rescue
-        $log.error "unexpected error", :error=>$!.to_s
-        $log.error_backtrace
-      end
     end
 
     def restart
@@ -90,9 +77,8 @@ module Fluent::Plugin
       @io = IO.popen(@command, "r")
       @pid = @io.pid
       @dw = DstatCSVWatcher.new(@tmp_file, &method(:receive_lines))
-      @dw.attach(@loop)
-      @tw = TimerWatcher.new(1, true,  &method(:check_dstat))
-      @tw.attach(@loop)
+      event_loop_attach(@dw)
+      @tw = timer_execute(:in_dstat_timer, 1, &method(:check_dstat))
     end
 
     def touch_or_truncate(file)
@@ -147,7 +133,7 @@ module Fluent::Plugin
           @dw.detach
           File.truncate(@tmp_file, 0)
           @dw = DstatCSVWatcher.new(@tmp_file, &method(:receive_lines))
-          @dw.attach(@loop)
+          event_loop_attach(@dw)
         end
 
         @line_number += 1
